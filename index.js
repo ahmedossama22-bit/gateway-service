@@ -14,6 +14,10 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+app.get('/health',(req, res)=> {
+    res.status(200).json({status:'ok', timestamp: new Date().toISOString()});
+});
+
 // Auth middleware placeholder (to be implemented in the future)
 const authMiddleware = (req, res, next) => {
     // TODO: Verify JWT or session
