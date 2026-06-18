@@ -14,8 +14,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.get('/health',(req, res)=> {
-    res.status(200).json({status:'ok', timestamp: new Date().toISOString()});
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // Auth middleware placeholder (to be implemented in the future)
@@ -33,28 +34,18 @@ app.use('/api', authMiddleware, createProxyMiddleware({
         proxyRes.headers['Access-Control-Allow-Origin'] = '*';
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
         proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
+    },
+    onError: function (err, req, res) {
+        console.error('[Gateway Service] Proxy Error:', err.message);
+        res.status(504).json({ error: 'Gateway Proxy Error', message: err.message });
     }
 }));
 
-// Serve frontend static files
-const frontendPath = path.join(__dirname, '../frontend-service');
-const frontendEnvPath = path.join(frontendPath, '.env');
-let frontendEnv = {};
-if (fs.existsSync(frontendEnvPath)) {
-    frontendEnv = dotenv.parse(fs.readFileSync(frontendEnvPath));
-}
 
-// Expose frontend environment variables dynamically
-app.get('/env.js', (req, res) => {
-    res.type('application/javascript');
-    res.send(`window.ENV = ${JSON.stringify(frontendEnv)};`);
-});
-
-app.use(express.static(frontendPath));
-
-// Fallback to index.html for SPA routing (if needed)
-app.get('*', (req, res) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('[Gateway Service] Unhandled Error:', err);
+    res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {
